@@ -1,0 +1,260 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import tensorflow as tf
+
+# In[2]:
+
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense,BatchNormalization, Conv2D, Flatten, Dropout, MaxPooling2D
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# In[3]:
+
+
+import os
+
+PATH = 'C:/Users/ADMIN/Desktop/Rotunda'
+
+# In[4]:
+
+
+train_dir = os.path.join(PATH, 'Training')
+validation_dir = os.path.join(PATH, 'Validation')
+
+# In[5]:
+
+
+train_Ta_dir = os.path.join(train_dir, 'Ta_Rotunda')
+train_Te_dir = os.path.join(train_dir, 'Te_Rotunda')
+# train_Te2_dir = os.path.join(train_dir, 'Te2_Rotunda')
+train_Tin_dir = os.path.join(train_dir, 'Tin_Rotunda')
+train_Tun_dir = os.path.join(train_dir, 'Tun_Rotunda')
+
+validation_Ta_dir = os.path.join(validation_dir, 'Ta_Rotunda')
+validation_Te_dir = os.path.join(validation_dir, 'Te_Rotunda')
+# validation_Te2_dir = os.path.join(validation_dir, 'Te2_Rotunda')
+validation_Tin_dir = os.path.join(validation_dir, 'Tin_Rotunda')
+validation_Tun_dir = os.path.join(validation_dir, 'Tun_Rotunda')
+
+# In[6]:
+
+
+num_Ta_tr = len(os.listdir(train_Ta_dir))
+num_Te_tr = len(os.listdir(train_Te_dir))
+# num_Te2_tr = len(os.listdir(train_Te2_dir))
+num_Tin_tr = len(os.listdir(train_Tin_dir))
+num_Tun_tr = len(os.listdir(train_Tun_dir))
+
+num_Ta_val = len(os.listdir(validation_Ta_dir))
+num_Te_val = len(os.listdir(validation_Te_dir))
+# num_Te2_val = len(os.listdir(validation_Te2_dir))
+num_Tin_val = len(os.listdir(validation_Tin_dir))
+num_Tun_val = len(os.listdir(validation_Tun_dir))
+
+total_train = num_Ta_tr + num_Te_tr + num_Tin_tr + num_Tun_tr
+total_val = num_Ta_val + num_Te_val + num_Tin_val + num_Tun_val
+# total_train = num_Ta_tr + num_Te_tr + num_Te2_tr + num_Tin_tr + num_Tun_tr
+# total_val = num_Ta_val + num_Te1_val + num_Te2_val + num_Tin_val + num_Tun_val
+
+
+
+print(total_train)
+print(total_val)
+
+# In[7]:
+
+
+print('total training stroke 1 images:', num_Ta_tr)
+print('total training stroke 2 images:', num_Te_tr)
+# print('total training stroke 3 images:', num_Te2_tr)
+print('total training stroke 4 images:', num_Tin_tr)
+print('total training stroke 5 images:', num_Tun_tr)
+
+print('total validation stroke 1 images:', num_Ta_val)
+print('total validation stroke 2 images:', num_Te_val)
+# print('total validation stroke 3 images:', num_Te2_val)
+print('total validation stroke 4 images:', num_Tin_val)
+print('total validation stroke 5 images:', num_Tun_val)
+
+print("--")
+print("Total training images:", total_train)
+print("Total validation images:", total_val)
+
+# In[8]:
+
+
+batch_size = 50
+epochs = 300
+IMG_HEIGHT = 28
+IMG_WIDTH = 28
+print(total_val // batch_size)
+
+# In[9]:
+
+
+train_image_generator = ImageDataGenerator( rescale=1. / 255,
+                                            shear_range=0.2,
+                                            zoom_range=0.2,
+                                            horizontal_flip=True)
+# , rotation_range= 20 , width_shift_range=0.2, height_shift_range=0.2,horizontal_flip= True, vertical_flip= True)  # Generator for our training data
+validation_image_generator = ImageDataGenerator(rescale=1. / 255,
+                                            shear_range=0.2,
+                                            zoom_range=0.2,
+                                            horizontal_flip=True)
+# , rotation_range= 20 , width_shift_range=0.2, height_shift_range=0.2,horizontal_flip= True, vertical_flip= True)  # Generator for our validation data
+
+# In[10]:
+
+
+train_data_gen = train_image_generator.flow_from_directory(batch_size=batch_size,
+                                                           directory=train_dir,
+                                                           shuffle=True,
+                                                           target_size=(IMG_HEIGHT, IMG_WIDTH),
+                                                           color_mode='grayscale',
+                                                           class_mode='categorical')
+
+# In[12]:
+val_data_gen = validation_image_generator.flow_from_directory(batch_size=batch_size,
+                                                              directory=validation_dir,
+                                                              shuffle=True,
+                                                              target_size=(IMG_HEIGHT, IMG_WIDTH),
+                                                              color_mode='grayscale',
+                                                              class_mode='categorical')
+
+# In[13]:
+
+
+sample_training_images, _ = next(train_data_gen)
+
+
+# In[25]:
+
+
+# This function will plot images in the form of a grid with 1 row and 5 columns where images are placed in each column.
+def plotImages(images_arr):
+    fig, axes = plt.subplots(1, 5, figsize=(20, 20))
+    axes = axes.flatten()
+    for img, ax in zip(images_arr, axes):
+        ax.imshow(img)
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+
+# In[28]:
+
+
+#plotImages(sample_training_images[50:80])
+
+# In[34]:
+
+
+model = Sequential([
+    # BatchNormalization(input_shape=(100,100,1)),
+    Conv2D(32, (3,3), input_shape=(IMG_HEIGHT, IMG_WIDTH,1)),
+    # MaxPooling2D(pool_size=2),
+    Conv2D(filters=64,kernel_size=4, padding='same',activation='relu'),
+    # MaxPooling2D(pool_size=2),
+    # # Conv2D(filters=128, kernel_size=3, padding='same', activation='relu'),
+    MaxPooling2D(pool_size=2),
+    # Conv2D(filters=128, kernel_size=2, padding='same', activation='relu'),
+    # MaxPooling2D(pool_size=2),
+    Dropout(0.25),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    # Dense(64, activation='relu'),
+    # Dropout(0.25),
+    # Dense(32, activation='relu'),
+    # Dropout(0.25),
+    # Dense(16, activation='relu'),
+    # Dense(8, activation='relu'),
+    Dense(4 , activation='softmax')
+])
+
+
+
+# In[35]:
+
+
+class myCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        if (logs.get('val_loss') < 0.08):
+            print("\nReached 98% accuracy so cancelling training!")
+            self.model.stop_training = True
+
+#
+# # In[36]:
+#
+#
+callbacks = myCallback()
+opt=tf.keras.optimizers.Adam(learning_rate=0.01)
+model.compile(optimizer=opt,
+              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+# In[37]:
+
+
+model.summary()
+
+# In[38]:
+
+
+history = model.fit(
+    train_data_gen,
+    steps_per_epoch=total_train // batch_size,
+    epochs=epochs,
+    validation_data=val_data_gen,
+    validation_steps=total_val // batch_size,
+    shuffle=True,
+    callbacks=[callbacks]
+)
+
+# In[39]:
+
+
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs_range = range(epochs)
+
+# plt.figure(figsize=(8, 8))
+# plt.subplot(1, 2, 1)
+# plt.plot(epochs_range, acc, label='Training Accuracy')
+# plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+# plt.legend(loc='lower right')
+# plt.title('Training and Validation Accuracy')
+#
+# plt.subplot(1, 2, 2)
+# plt.plot(epochs_range, loss, label='Training Loss')
+# plt.plot(epochs_range, val_loss, label='Validation Loss')
+# plt.legend(loc='upper right')
+# plt.title('Training and Validation Loss')
+# plt.show()
+
+# In[40]:
+
+
+model.save_weights('Manchu1234.h5')
+model.save('Model_Tabla10_model.h5')
+
+# In[100]:
+
+
+# In[105]:
+
+
+
+
